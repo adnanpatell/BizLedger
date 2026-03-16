@@ -1,20 +1,47 @@
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir } from "fs/promises"
-import { join, extname } from "path"
+import { extname } from "path"
 import { randomUUID } from "crypto"
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads"
 const MAX_SIZE = parseInt(process.env.MAX_FILE_SIZE_MB || "10") * 1024 * 1024
+
+// Save a file — uses Vercel Blob in production, local disk in development.
+// Returns the stored path/URL used to retrieve the file later.
+async function saveUploadedFile(
+  buffer: Buffer,
+  fileName: string,
+  fileType: string,
+  year: number,
+  mon: string,
+): Promise<string> {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const { put } = await import("@vercel/blob")
+    const blob = await put(`invoices/${year}/${mon}/${fileName}`, buffer, {
+      access: "public",
+      contentType: fileType,
+    })
+    return blob.url
+  }
+
+  // Local disk fallback for development
+  const { writeFile, mkdir } = await import("fs/promises")
+  const { join } = await import("path")
+  const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads"
+  const uploadPath = join(process.cwd(), UPLOAD_DIR, String(year), mon)
+  await mkdir(uploadPath, { recursive: true })
+  await writeFile(join(uploadPath, fileName), buffer)
+  return `${UPLOAD_DIR}/${year}/${mon}/${fileName}`
+}
 
 // ── Layer 1: Multi-Strategy Text Extraction ────────────────────────────────
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    // Use createRequire to load the CJS build directly, bypassing the ESM wrapper
-    // and avoiding pdf-parse's test-file read bug in Next.js serverless
+    // createRequire loads pdf-parse as a CommonJS module (bypasses ESM interop
+    // issues and the test-fixture read bug). Package name only — let Node resolve
+    // via the "main" field so there's no hardcoded internal path to break.
     const { createRequire } = await import("module")
     const req = createRequire(import.meta.url)
-    const pdfParse = req("pdf-parse/dist/pdf-parse/cjs/index.cjs")
+    const pdfParse = req("pdf-parse")
     const fn = typeof pdfParse === "function" ? pdfParse : pdfParse.default
     const data = await fn(buffer)
     return data.text || ""
@@ -639,21 +666,16 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_SIZE)
       return NextResponse.json({ error: `File too large. Max ${process.env.MAX_FILE_SIZE_MB || 10}MB` }, { status: 400 })
 
-    // Save file
-    const now  = new Date()
-    const year = now.getFullYear()
-    const mon  = String(now.getMonth() + 1).padStart(2, "0")
-    const uploadPath = join(process.cwd(), UPLOAD_DIR, String(year), mon)
-    await mkdir(uploadPath, { recursive: true })
-
+    // Save file (Vercel Blob in production, local disk in development)
+    const now      = new Date()
+    const year     = now.getFullYear()
+    const mon      = String(now.getMonth() + 1).padStart(2, "0")
     const ext      = extname(file.name)
     const fileName = `${randomUUID()}${ext}`
-    const filePath = join(uploadPath, fileName)
-    const relPath  = `${UPLOAD_DIR}/${year}/${mon}/${fileName}`
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    await writeFile(filePath, buffer)
+    const storedPath = await saveUploadedFile(buffer, fileName, file.type, year, mon)
 
     // Text extraction
     let rawText = ""
@@ -686,7 +708,7 @@ export async function POST(request: NextRequest) {
       file: {
         fileName,
         originalName: file.name,
-        filePath: relPath,
+        filePath: storedPath,
         fileType: file.type,
         fileSize: file.size,
         extractedText: rawText,

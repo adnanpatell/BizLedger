@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readFile } from "fs/promises"
-import { join } from "path"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(
@@ -10,7 +8,7 @@ export async function GET(
   try {
     const { filename } = await params
 
-    // Look up by fileName in DB — only serve files that are registered attachments
+    // Only serve files that are registered attachments (prevents arbitrary path access)
     const attachment = await prisma.attachment.findFirst({
       where: { fileName: filename },
     })
@@ -18,10 +16,17 @@ export async function GET(
     if (!attachment)
       return NextResponse.json({ error: "File not found" }, { status: 404 })
 
+    // Vercel Blob (production): filePath is a public https:// URL — redirect to it
+    if (attachment.filePath.startsWith("https://")) {
+      return NextResponse.redirect(attachment.filePath)
+    }
+
+    // Local disk (development): read and stream the file
+    const { readFile } = await import("fs/promises")
+    const { join } = await import("path")
     const absolutePath = join(process.cwd(), attachment.filePath)
     const fileBuffer = await readFile(absolutePath)
 
-    // Use inline for PDFs/images (view in browser), attachment for other types
     const viewable = ["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(attachment.fileType)
     const disposition = viewable
       ? `inline; filename="${attachment.originalName}"`
