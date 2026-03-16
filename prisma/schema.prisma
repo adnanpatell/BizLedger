@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Business {
+  id           String        @id @default(cuid())
+  name         String        @default("My Business")
+  taxNumber    String?
+  address      String?
+  currency     String        @default("CAD")
+  province     String        @default("AB")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  categories   Category[]
+}
+
+model Category {
+  id           String          @id @default(cuid())
+  name         String
+  type         CategoryType    @default(BOTH)
+  businessId   String
+  business     Business        @relation(fields: [businessId], references: [id])
+  transactions Transaction[]
+  createdAt    DateTime        @default(now())
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  date          DateTime
+  invoiceNumber String?
+  companyName   String
+  type          TransactionType
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  description   String?
+  amountExclGst Float
+  gstRate       Float           @default(0)
+  gstAmount     Float           @default(0)
+  totalAmount   Float
+  paymentStatus PaymentStatus   @default(PENDING)
+  businessId    String
+  business      Business        @relation(fields: [businessId], references: [id])
+  attachments   Attachment[]
+  lineItems     LineItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model LineItem {
+  id            String      @id @default(cuid())
+  description   String
+  quantity      Float       @default(1)
+  unitPrice     Float
+  gstRate       Float       @default(0)
+  amount        Float
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id            String      @id @default(cuid())
+  fileName      String
+  originalName  String
+  filePath      String
+  fileType      String
+  fileSize      Int
+  extractedText String?     @db.Text
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+  BOTH
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+}
