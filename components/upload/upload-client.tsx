@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
+import { apiUrl } from "@/lib/api"
 
 interface ExtractedData {
   company_name: string | null
@@ -73,7 +74,7 @@ export function UploadClient() {
   const [step, setStep] = useState<"upload" | "preview" | "done">("upload")
 
   useEffect(() => {
-    fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || []))
+    fetch(apiUrl("/api/categories")).then(r => r.json()).then(d => setCategories(d.categories || []))
   }, [])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -87,7 +88,7 @@ export function UploadClient() {
       const formData = new FormData()
       formData.append("file", file)
 
-      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const res = await fetch(apiUrl("/api/upload"), { method: "POST", body: formData })
       const data = await res.json()
 
       if (!res.ok) {
@@ -148,7 +149,7 @@ export function UploadClient() {
     setSaving(true)
     try {
       // Create transaction
-      const txRes = await fetch("/api/transactions", {
+      const txRes = await fetch(apiUrl("/api/transactions"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,7 +164,7 @@ export function UploadClient() {
 
       // If we have a file, attach it
       if (uploadResult?.file) {
-        await fetch(`/api/transactions/${transaction.id}/attachments`, {
+        await fetch(apiUrl(`/api/transactions/${transaction.id}/attachments`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(uploadResult.file),

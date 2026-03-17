@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { MONTHS, CANADIAN_PROVINCES } from "@/lib/utils"
 import { Plus, Trash2, Save, Download } from "lucide-react"
+import { apiUrl } from "@/lib/api"
 
 // Business Profile Tab
 function BusinessProfile() {
@@ -27,7 +28,7 @@ function BusinessProfile() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch("/api/business")
+    fetch(apiUrl("/api/business"))
       .then(r => r.json())
       .then(d => {
         if (d.business) setForm({ ...d.business })
@@ -38,7 +39,7 @@ function BusinessProfile() {
   const save = async () => {
     setSaving(true)
     try {
-      const res = await fetch("/api/business", {
+      const res = await fetch(apiUrl("/api/business"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -127,7 +128,7 @@ function Categories() {
 
   const load = () => {
     setLoading(true)
-    fetch("/api/categories")
+    fetch(apiUrl("/api/categories"))
       .then(r => r.json())
       .then(d => setCategories(d.categories || []))
       .finally(() => setLoading(false))
@@ -139,7 +140,7 @@ function Categories() {
     if (!newName.trim()) return
     setAdding(true)
     try {
-      const res = await fetch("/api/categories", {
+      const res = await fetch(apiUrl("/api/categories"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName.trim(), type: newType }),
@@ -158,7 +159,7 @@ function Categories() {
   const remove = async (id: string) => {
     if (!confirm("Delete this category?")) return
     try {
-      await fetch(`/api/categories?id=${id}`, { method: "DELETE" })
+      await fetch(apiUrl(`/api/categories?id=${id}`), { method: "DELETE" })
       toast.success("Category deleted")
       load()
     } catch {
@@ -246,7 +247,7 @@ function Export() {
     } else {
       params.set("year", String(year))
     }
-    window.open(`/api/export?${params}`, "_blank")
+    window.open(apiUrl(`/api/export?${params}`), "_blank")
   }
 
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i)

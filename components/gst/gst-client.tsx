@@ -13,6 +13,7 @@ import {
 import { formatCurrency, MONTHS, getMonthName } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { AlertCircle, TrendingUp } from "lucide-react"
+import { apiUrl } from "@/lib/api"
 
 const now = new Date()
 
@@ -25,7 +26,7 @@ function MonthlyTax() {
 
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/gst/monthly?month=${month}&year=${year}`)
+    fetch(apiUrl(`/api/gst/monthly?month=${month}&year=${year}`))
       .then(r => r.json())
       .then(setData)
       .finally(() => setLoading(false))
@@ -157,7 +158,7 @@ function QuarterlyTax() {
 
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/gst/quarterly?year=${year}`)
+    fetch(apiUrl(`/api/gst/quarterly?year=${year}`))
       .then(r => r.json())
       .then(setData)
       .finally(() => setLoading(false))
@@ -236,7 +237,7 @@ function AnnualTax() {
 
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/gst/annual?year=${year}`)
+    fetch(apiUrl(`/api/gst/annual?year=${year}`))
       .then(r => r.json())
       .then(setData)
       .finally(() => setLoading(false))

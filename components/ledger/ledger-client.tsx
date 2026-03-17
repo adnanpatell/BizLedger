@@ -18,6 +18,7 @@ import {
   Plus, Search, Download, Trash2, CheckSquare,
   ChevronUp, ChevronDown, Pencil, FileText, Filter, Paperclip
 } from "lucide-react"
+import { apiUrl } from "@/lib/api"
 
 interface Transaction {
   id: string
@@ -90,7 +91,7 @@ export function LedgerClient() {
       if (statusFilter !== "ALL") params.set("status", statusFilter)
       if (search) params.set("search", search)
 
-      const res = await fetch(`/api/transactions?${params}`)
+      const res = await fetch(apiUrl(`/api/transactions?${params}`))
       const data = await res.json()
       setTransactions(data.transactions || [])
     } finally {
@@ -100,7 +101,7 @@ export function LedgerClient() {
 
   useEffect(() => { fetchTransactions() }, [fetchTransactions])
   useEffect(() => {
-    fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || []))
+    fetch(apiUrl("/api/categories")).then(r => r.json()).then(d => setCategories(d.categories || []))
   }, [])
 
   const sorted = [...transactions].sort((a, b) => {
@@ -168,7 +169,7 @@ export function LedgerClient() {
     }
     setSaving(true)
     try {
-      const url = editTx ? `/api/transactions/${editTx.id}` : "/api/transactions"
+      const url = editTx ? apiUrl(`/api/transactions/${editTx.id}`) : apiUrl("/api/transactions")
       const method = editTx ? "PUT" : "POST"
       const res = await fetch(url, {
         method,
@@ -189,7 +190,7 @@ export function LedgerClient() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this transaction?")) return
     try {
-      await fetch(`/api/transactions/${id}`, { method: "DELETE" })
+      await fetch(apiUrl(`/api/transactions/${id}`), { method: "DELETE" })
       toast.success("Transaction deleted")
       fetchTransactions()
     } catch {
@@ -201,7 +202,7 @@ export function LedgerClient() {
     if (selectedIds.size === 0) return
     if (action === "delete" && !confirm(`Delete ${selectedIds.size} transactions?`)) return
     try {
-      await fetch("/api/transactions/bulk", {
+      await fetch(apiUrl("/api/transactions/bulk"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selectedIds), action }),
@@ -287,7 +288,7 @@ export function LedgerClient() {
           size="icon"
           onClick={() => {
             const params = new URLSearchParams({ month: String(month), year: String(year) })
-            window.open(`/api/export?${params}`, "_blank")
+            window.open(apiUrl(`/api/export?${params}`), "_blank")
           }}
           title="Export CSV"
         >
