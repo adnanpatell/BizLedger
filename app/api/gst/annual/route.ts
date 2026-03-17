@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import type { Transaction } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,9 +16,9 @@ export async function GET(request: NextRequest) {
       where: { businessId, date: { gte: yearStart, lte: yearEnd } },
     })
 
-    const totalTurnover    = transactions.filter(t => t.type === "INCOME").reduce((s, t) => s + t.amountExclGst, 0)
-    const totalTaxCollected = transactions.filter(t => t.type === "INCOME").reduce((s, t) => s + t.gstAmount, 0)
-    const totalTaxPaid      = transactions.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.gstAmount, 0)
+    const totalTurnover    = transactions.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.amountExclGst, 0)
+    const totalTaxCollected = transactions.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
+    const totalTaxPaid      = transactions.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
     const netTaxPaid        = totalTaxCollected - totalTaxPaid
 
     // Month-by-month trend Jan → Dec
@@ -25,11 +26,11 @@ export async function GET(request: NextRequest) {
     for (let m = 1; m <= 12; m++) {
       const start = new Date(year, m - 1, 1)
       const end   = new Date(year, m, 0, 23, 59, 59)
-      const txs   = transactions.filter(t => t.date >= start && t.date <= end)
-      const inc   = txs.filter(t => t.type === "INCOME").reduce((s, t) => s + t.totalAmount, 0)
-      const exp   = txs.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.totalAmount, 0)
-      const taxCol = txs.filter(t => t.type === "INCOME").reduce((s, t) => s + t.gstAmount, 0)
-      const taxPd  = txs.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.gstAmount, 0)
+      const txs   = transactions.filter((t: Transaction) => t.date >= start && t.date <= end)
+      const inc   = txs.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.totalAmount, 0)
+      const exp   = txs.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.totalAmount, 0)
+      const taxCol = txs.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
+      const taxPd  = txs.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
       monthlyData.push({
         month:        new Date(year, m - 1, 1).toLocaleString("en-CA", { month: "short" }),
         income:       Math.round(inc * 100) / 100,

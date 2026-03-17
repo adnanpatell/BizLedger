@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import type { Transaction } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,8 +34,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const totalTaxCollected = transactions.filter(t => t.type === "INCOME").reduce((s, t) => s + t.gstAmount, 0)
-    const totalTaxPaid      = transactions.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.gstAmount, 0)
+    const totalTaxCollected = transactions.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
+    const totalTaxPaid      = transactions.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
     const round = (n: number) => Math.round(n * 100) / 100
 
     return NextResponse.json({

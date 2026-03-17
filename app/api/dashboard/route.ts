@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCalendarQuarter, getQuarterMonths } from "@/lib/utils"
+import type { Transaction } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,12 +31,12 @@ export async function GET(request: NextRequest) {
       where: { businessId, date: { gte: quarterStart, lte: quarterEnd } },
     })
 
-    const totalIncome  = monthlyTx.filter(t => t.type === "INCOME").reduce((s, t) => s + t.totalAmount, 0)
-    const totalExpense = monthlyTx.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.totalAmount, 0)
+    const totalIncome  = monthlyTx.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.totalAmount, 0)
+    const totalExpense = monthlyTx.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.totalAmount, 0)
     const netProfit    = totalIncome - totalExpense
 
-    const qTaxCollected = quarterlyTx.filter(t => t.type === "INCOME").reduce((s, t) => s + t.gstAmount, 0)
-    const qTaxPaid      = quarterlyTx.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.gstAmount, 0)
+    const qTaxCollected = quarterlyTx.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
+    const qTaxPaid      = quarterlyTx.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
     const taxPayable    = Math.max(0, qTaxCollected - qTaxPaid)
 
     // Monthly trend (last 12 months)
@@ -48,8 +49,8 @@ export async function GET(request: NextRequest) {
         where: { businessId, date: { gte: new Date(y, m - 1, 1), lte: new Date(y, m, 0, 23, 59, 59) } },
         select: { type: true, totalAmount: true },
       })
-      const inc = txs.filter(t => t.type === "INCOME").reduce((s, t) => s + t.totalAmount, 0)
-      const exp = txs.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.totalAmount, 0)
+      const inc = txs.filter(t => t.type === "INCOME").reduce((s: number, t) => s + t.totalAmount, 0)
+      const exp = txs.filter(t => t.type === "EXPENSE").reduce((s: number, t) => s + t.totalAmount, 0)
       trend.push({
         month:   d.toLocaleString("en-CA", { month: "short" }),
         year:    y,

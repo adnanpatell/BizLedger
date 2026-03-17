@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getQuarterMonths } from "@/lib/utils"
+import type { Transaction } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,10 +29,10 @@ export async function GET(request: NextRequest) {
         where: { businessId, date: { gte: start, lte: end } },
       })
 
-      const totalSales     = txs.filter(t => t.type === "INCOME").reduce((s, t) => s + t.amountExclGst, 0)
-      const totalPurchases = txs.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.amountExclGst, 0)
-      const outputTax      = txs.filter(t => t.type === "INCOME").reduce((s, t) => s + t.gstAmount, 0)
-      const itc            = txs.filter(t => t.type === "EXPENSE").reduce((s, t) => s + t.gstAmount, 0)
+      const totalSales     = txs.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.amountExclGst, 0)
+      const totalPurchases = txs.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.amountExclGst, 0)
+      const outputTax      = txs.filter((t: Transaction) => t.type === "INCOME").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
+      const itc            = txs.filter((t: Transaction) => t.type === "EXPENSE").reduce((s: number, t: Transaction) => s + t.gstAmount, 0)
       const netLiability   = outputTax - itc
       const round = (n: number) => Math.round(n * 100) / 100
 
