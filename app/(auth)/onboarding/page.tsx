@@ -37,7 +37,6 @@ const DEFAULT_US_STATE = "CA"
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [step, setStep] = useState<Step>(1)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<FormData>({
@@ -53,6 +52,7 @@ export default function OnboardingPage() {
   })
 
   useEffect(() => {
+    const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.push("/login"); return }
       if (user.user_metadata?.onboarded) { router.push("/"); return }
@@ -82,6 +82,7 @@ export default function OnboardingPage() {
   const finish = async () => {
     setSaving(true)
     try {
+      const supabase = createClient()
       const res = await apiFetch("/api/business/onboard", {
         method: "POST",
         body: JSON.stringify({
