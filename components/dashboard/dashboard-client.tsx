@@ -16,7 +16,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { apiUrl } from "@/lib/api"
+import { apiFetch } from "@/lib/api"
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"]
 
@@ -71,7 +71,7 @@ export function DashboardClient() {
   const now = new Date()
 
   useEffect(() => {
-    fetch(apiUrl(`/api/dashboard?month=${now.getMonth() + 1}&year=${now.getFullYear()}`))
+    apiFetch(`/api/dashboard?month=${now.getMonth() + 1}&year=${now.getFullYear()}`)
       .then(r => r.json())
       .then(setData)
       .finally(() => setLoading(false))

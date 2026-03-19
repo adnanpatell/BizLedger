@@ -8,11 +8,17 @@ datasource db {
 
 model Business {
   id           String        @id @default(cuid())
+  userId       String?       @unique
+  email        String?
+  avatarUrl    String?
   name         String        @default("My Business")
   taxNumber    String?
   address      String?
   currency     String        @default("CAD")
   province     String        @default("AB")
+  city         String?
+  country      String?       @default("CA")
+  onboarded    Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   transactions Transaction[]

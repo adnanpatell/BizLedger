@@ -18,7 +18,7 @@ import {
   Plus, Search, Download, Trash2, CheckSquare,
   ChevronUp, ChevronDown, Pencil, FileText, Filter, Paperclip
 } from "lucide-react"
-import { apiUrl } from "@/lib/api"
+import { apiFetch, apiUrl } from "@/lib/api"
 
 interface Transaction {
   id: string
@@ -91,7 +91,7 @@ export function LedgerClient() {
       if (statusFilter !== "ALL") params.set("status", statusFilter)
       if (search) params.set("search", search)
 
-      const res = await fetch(apiUrl(`/api/transactions?${params}`))
+      const res = await apiFetch(`/api/transactions?${params}`)
       const data = await res.json()
       setTransactions(data.transactions || [])
     } finally {
@@ -101,7 +101,7 @@ export function LedgerClient() {
 
   useEffect(() => { fetchTransactions() }, [fetchTransactions])
   useEffect(() => {
-    fetch(apiUrl("/api/categories")).then(r => r.json()).then(d => setCategories(d.categories || []))
+    apiFetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || []))
   }, [])
 
   const sorted = [...transactions].sort((a, b) => {
@@ -169,11 +169,10 @@ export function LedgerClient() {
     }
     setSaving(true)
     try {
-      const url = editTx ? apiUrl(`/api/transactions/${editTx.id}`) : apiUrl("/api/transactions")
+      const path = editTx ? `/api/transactions/${editTx.id}` : "/api/transactions"
       const method = editTx ? "PUT" : "POST"
-      const res = await fetch(url, {
+      const res = await apiFetch(path, {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, amountExclGst: Number(form.amountExclGst), gstRate: Number(form.gstRate) }),
       })
       if (!res.ok) throw new Error("Save failed")
@@ -190,7 +189,7 @@ export function LedgerClient() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this transaction?")) return
     try {
-      await fetch(apiUrl(`/api/transactions/${id}`), { method: "DELETE" })
+      await apiFetch(`/api/transactions/${id}`, { method: "DELETE" })
       toast.success("Transaction deleted")
       fetchTransactions()
     } catch {
@@ -202,9 +201,8 @@ export function LedgerClient() {
     if (selectedIds.size === 0) return
     if (action === "delete" && !confirm(`Delete ${selectedIds.size} transactions?`)) return
     try {
-      await fetch(apiUrl("/api/transactions/bulk"), {
+      await apiFetch("/api/transactions/bulk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selectedIds), action }),
       })
       toast.success(`Bulk action complete`)

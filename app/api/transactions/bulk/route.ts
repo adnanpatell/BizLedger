@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { requireAuthNext } from "@/lib/auth-api"
 
 const BulkSchema = z.object({
   ids: z.array(z.string()).min(1),
@@ -8,12 +9,15 @@ const BulkSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const body = await request.json()
     const { ids, action } = BulkSchema.parse(body)
 
     if (action === "delete") {
-      await prisma.transaction.deleteMany({ where: { id: { in: ids } } })
+      await prisma.transaction.deleteMany({ where: { id: { in: ids }, businessId: auth.businessId } })
       return NextResponse.json({ success: true, affected: ids.length })
     }
 
@@ -24,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     await prisma.transaction.updateMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, businessId: auth.businessId },
       data: { paymentStatus: statusMap[action] },
     })
 

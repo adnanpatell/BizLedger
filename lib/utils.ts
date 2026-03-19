@@ -123,3 +123,70 @@ export function getTaxLabel(provinceCode: string): string {
 
 /** All unique combined tax rates across Canadian provinces, for dropdowns */
 export const CA_TAX_RATES = [0, 5, 11, 12, 13, 14.975, 15]
+
+// ── US States ─────────────────────────────────────────────────────────────────
+
+export interface StateInfo {
+  code: string
+  name: string
+  /** Base state sales tax rate (%) — does not include local/county rates */
+  salesTaxRate: number
+}
+
+export const US_STATES: StateInfo[] = [
+  { code: "AL", name: "Alabama",              salesTaxRate: 4 },
+  { code: "AK", name: "Alaska",               salesTaxRate: 0 },
+  { code: "AZ", name: "Arizona",              salesTaxRate: 5.6 },
+  { code: "AR", name: "Arkansas",             salesTaxRate: 6.5 },
+  { code: "CA", name: "California",           salesTaxRate: 7.25 },
+  { code: "CO", name: "Colorado",             salesTaxRate: 2.9 },
+  { code: "CT", name: "Connecticut",          salesTaxRate: 6.35 },
+  { code: "DE", name: "Delaware",             salesTaxRate: 0 },
+  { code: "DC", name: "District of Columbia", salesTaxRate: 6 },
+  { code: "FL", name: "Florida",              salesTaxRate: 6 },
+  { code: "GA", name: "Georgia",              salesTaxRate: 4 },
+  { code: "HI", name: "Hawaii",               salesTaxRate: 4 },
+  { code: "ID", name: "Idaho",                salesTaxRate: 6 },
+  { code: "IL", name: "Illinois",             salesTaxRate: 6.25 },
+  { code: "IN", name: "Indiana",              salesTaxRate: 7 },
+  { code: "IA", name: "Iowa",                 salesTaxRate: 6 },
+  { code: "KS", name: "Kansas",               salesTaxRate: 6.5 },
+  { code: "KY", name: "Kentucky",             salesTaxRate: 6 },
+  { code: "LA", name: "Louisiana",            salesTaxRate: 4.45 },
+  { code: "ME", name: "Maine",                salesTaxRate: 5.5 },
+  { code: "MD", name: "Maryland",             salesTaxRate: 6 },
+  { code: "MA", name: "Massachusetts",        salesTaxRate: 6.25 },
+  { code: "MI", name: "Michigan",             salesTaxRate: 6 },
+  { code: "MN", name: "Minnesota",            salesTaxRate: 6.875 },
+  { code: "MS", name: "Mississippi",          salesTaxRate: 7 },
+  { code: "MO", name: "Missouri",             salesTaxRate: 4.225 },
+  { code: "MT", name: "Montana",              salesTaxRate: 0 },
+  { code: "NE", name: "Nebraska",             salesTaxRate: 5.5 },
+  { code: "NV", name: "Nevada",               salesTaxRate: 6.85 },
+  { code: "NH", name: "New Hampshire",        salesTaxRate: 0 },
+  { code: "NJ", name: "New Jersey",           salesTaxRate: 6.625 },
+  { code: "NM", name: "New Mexico",           salesTaxRate: 5 },
+  { code: "NY", name: "New York",             salesTaxRate: 4 },
+  { code: "NC", name: "North Carolina",       salesTaxRate: 4.75 },
+  { code: "ND", name: "North Dakota",         salesTaxRate: 5 },
+  { code: "OH", name: "Ohio",                 salesTaxRate: 5.75 },
+  { code: "OK", name: "Oklahoma",             salesTaxRate: 4.5 },
+  { code: "OR", name: "Oregon",               salesTaxRate: 0 },
+  { code: "PA", name: "Pennsylvania",         salesTaxRate: 6 },
+  { code: "RI", name: "Rhode Island",         salesTaxRate: 7 },
+  { code: "SC", name: "South Carolina",       salesTaxRate: 6 },
+  { code: "SD", name: "South Dakota",         salesTaxRate: 4.5 },
+  { code: "TN", name: "Tennessee",            salesTaxRate: 7 },
+  { code: "TX", name: "Texas",                salesTaxRate: 6.25 },
+  { code: "UT", name: "Utah",                 salesTaxRate: 6.1 },
+  { code: "VT", name: "Vermont",              salesTaxRate: 6 },
+  { code: "VA", name: "Virginia",             salesTaxRate: 5.3 },
+  { code: "WA", name: "Washington",           salesTaxRate: 6.5 },
+  { code: "WV", name: "West Virginia",        salesTaxRate: 6 },
+  { code: "WI", name: "Wisconsin",            salesTaxRate: 5 },
+  { code: "WY", name: "Wyoming",              salesTaxRate: 4 },
+]
+
+export function getDefaultTaxRateUS(stateCode: string): number {
+  return US_STATES.find(s => s.code === stateCode)?.salesTaxRate ?? 0
+}

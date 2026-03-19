@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { calcGst } from "@/lib/utils"
+import { requireAuthNext } from "@/lib/auth-api"
 
 const UpdateSchema = z.object({
   date: z.string().optional(),
@@ -15,11 +16,14 @@ const UpdateSchema = z.object({
   paymentStatus: z.enum(["PAID", "PENDING", "OVERDUE"]).optional(),
 })
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { id } = await params
     const transaction = await prisma.transaction.findUnique({
-      where: { id },
+      where: { id, businessId: auth.businessId },
       include: { category: true, attachments: true, lineItems: true },
     })
     if (!transaction) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -31,12 +35,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { id } = await params
     const body = await request.json()
     const data = UpdateSchema.parse(body)
 
-    const existing = await prisma.transaction.findUnique({ where: { id } })
+    const existing = await prisma.transaction.findUnique({ where: { id, businessId: auth.businessId } })
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     const amountExclGst = data.amountExclGst ?? existing.amountExclGst
@@ -64,9 +71,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { id } = await params
+    const existing = await prisma.transaction.findUnique({ where: { id, businessId: auth.businessId } })
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
     await prisma.transaction.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (error) {

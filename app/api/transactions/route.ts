@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { calcGst } from "@/lib/utils"
+import { requireAuthNext } from "@/lib/auth-api"
 
 const TransactionSchema = z.object({
   date: z.string(),
@@ -13,7 +14,6 @@ const TransactionSchema = z.object({
   amountExclGst: z.number().positive(),
   gstRate: z.number().min(0).max(28),
   paymentStatus: z.enum(["PAID", "PENDING", "OVERDUE"]).default("PENDING"),
-  businessId: z.string().default("default-business"),
   lineItems: z.array(z.object({
     description: z.string(),
     quantity: z.number().default(1),
@@ -24,6 +24,9 @@ const TransactionSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { searchParams } = new URL(request.url)
     const month = searchParams.get("month") ? parseInt(searchParams.get("month")!) : null
@@ -31,18 +34,14 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type")
     const status = searchParams.get("status")
     const search = searchParams.get("search")
-    const businessId = searchParams.get("businessId") || "default-business"
+    const businessId = auth.businessId
 
     const where: any = { businessId }
 
     if (month && year) {
-      const startDate = new Date(year, month - 1, 1)
-      const endDate = new Date(year, month, 0, 23, 59, 59)
-      where.date = { gte: startDate, lte: endDate }
+      where.date = { gte: new Date(year, month - 1, 1), lte: new Date(year, month, 0, 23, 59, 59) }
     } else if (year) {
-      const startDate = new Date(year, 3, 1) // Apr
-      const endDate = new Date(year + 1, 2, 31, 23, 59, 59) // Mar
-      where.date = { gte: startDate, lte: endDate }
+      where.date = { gte: new Date(year, 0, 1), lte: new Date(year, 11, 31, 23, 59, 59) }
     }
 
     if (type && type !== "ALL") where.type = type
@@ -68,6 +67,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const body = await request.json()
     const data = TransactionSchema.parse(body)
@@ -77,12 +79,11 @@ export async function POST(request: NextRequest) {
     const transaction = await prisma.transaction.create({
       data: {
         ...rest,
+        businessId: auth.businessId,
         date: new Date(data.date),
         gstAmount,
         totalAmount,
-        ...(lineItems && lineItems.length > 0 && {
-          lineItems: { create: lineItems },
-        }),
+        ...(lineItems && lineItems.length > 0 && { lineItems: { create: lineItems } }),
       },
       include: { category: true, attachments: true, lineItems: true },
     })

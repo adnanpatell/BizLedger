@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import type { Transaction } from "@prisma/client"
+import { requireAuthNext } from "@/lib/auth-api"
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { searchParams } = new URL(request.url)
     const now = new Date()
     const year = parseInt(searchParams.get("year") || String(now.getFullYear()))
-    const businessId = "default-business"
+    const businessId = auth.businessId
 
     const yearStart = new Date(year, 0, 1)
     const yearEnd   = new Date(year, 11, 31, 23, 59, 59)

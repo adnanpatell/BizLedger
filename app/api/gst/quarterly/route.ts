@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getQuarterMonths } from "@/lib/utils"
 import type { Transaction } from "@prisma/client"
+import { requireAuthNext } from "@/lib/auth-api"
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { searchParams } = new URL(request.url)
     const now = new Date()
     const year = parseInt(searchParams.get("year") || String(now.getFullYear()))
-    const businessId = "default-business"
+    const businessId = auth.businessId
 
     // Canadian GST/HST filing deadlines
     const deadlines: Record<number, string> = {

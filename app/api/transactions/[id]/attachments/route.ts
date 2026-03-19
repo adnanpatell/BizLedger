@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { requireAuthNext } from "@/lib/auth-api"
 
 const AttachmentSchema = z.object({
   fileName: z.string(),
@@ -15,12 +16,15 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { id } = await params
     const body = await request.json()
     const data = AttachmentSchema.parse(body)
 
-    const transaction = await prisma.transaction.findUnique({ where: { id } })
+    const transaction = await prisma.transaction.findUnique({ where: { id, businessId: auth.businessId } })
     if (!transaction)
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
 

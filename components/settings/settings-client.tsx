@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { MONTHS, CANADIAN_PROVINCES } from "@/lib/utils"
 import { Plus, Trash2, Save, Download } from "lucide-react"
-import { apiUrl } from "@/lib/api"
+import { apiFetch } from "@/lib/api"
 
 // Business Profile Tab
 function BusinessProfile() {
@@ -28,7 +28,7 @@ function BusinessProfile() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch(apiUrl("/api/business"))
+    apiFetch("/api/business")
       .then(r => r.json())
       .then(d => {
         if (d.business) setForm({ ...d.business })
@@ -39,9 +39,8 @@ function BusinessProfile() {
   const save = async () => {
     setSaving(true)
     try {
-      const res = await fetch(apiUrl("/api/business"), {
+      const res = await apiFetch("/api/business", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       })
       if (!res.ok) throw new Error()
@@ -128,7 +127,7 @@ function Categories() {
 
   const load = () => {
     setLoading(true)
-    fetch(apiUrl("/api/categories"))
+    apiFetch("/api/categories")
       .then(r => r.json())
       .then(d => setCategories(d.categories || []))
       .finally(() => setLoading(false))
@@ -140,9 +139,8 @@ function Categories() {
     if (!newName.trim()) return
     setAdding(true)
     try {
-      const res = await fetch(apiUrl("/api/categories"), {
+      const res = await apiFetch("/api/categories", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName.trim(), type: newType }),
       })
       if (!res.ok) throw new Error()
@@ -159,7 +157,7 @@ function Categories() {
   const remove = async (id: string) => {
     if (!confirm("Delete this category?")) return
     try {
-      await fetch(apiUrl(`/api/categories?id=${id}`), { method: "DELETE" })
+      await apiFetch(`/api/categories?id=${id}`, { method: "DELETE" })
       toast.success("Category deleted")
       load()
     } catch {
@@ -239,7 +237,7 @@ function Export() {
   const [year, setYear] = useState(now.getFullYear())
   const [mode, setMode] = useState<"month" | "year">("month")
 
-  const doExport = (format: "csv" | "json") => {
+  const doExport = async (format: "csv" | "json") => {
     const params = new URLSearchParams({ format })
     if (mode === "month") {
       params.set("month", String(month))
@@ -247,7 +245,14 @@ function Export() {
     } else {
       params.set("year", String(year))
     }
-    window.open(apiUrl(`/api/export?${params}`), "_blank")
+    const res = await apiFetch(`/api/export?${params}`)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `bizledger-export.${format}`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i)

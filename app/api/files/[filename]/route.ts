@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { requireAuthNext } from "@/lib/auth-api"
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ filename: string }> },
 ) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { filename } = await params
 
-    // Only serve files that are registered attachments (prevents arbitrary path access)
     const attachment = await prisma.attachment.findFirst({
-      where: { fileName: filename },
+      where: { fileName: filename, transaction: { businessId: auth.businessId } },
     })
 
     if (!attachment)
       return NextResponse.json({ error: "File not found" }, { status: 404 })
 
-    // Vercel Blob (production): filePath is a public https:// URL — redirect to it
     if (attachment.filePath.startsWith("https://")) {
       return NextResponse.redirect(attachment.filePath)
     }
 
-    // Local disk (development): read and stream the file
     const { readFile } = await import("fs/promises")
     const { join } = await import("path")
     const absolutePath = join(process.cwd(), attachment.filePath)

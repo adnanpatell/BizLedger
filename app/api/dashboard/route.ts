@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCalendarQuarter, getQuarterMonths } from "@/lib/utils"
 import type { Transaction } from "@prisma/client"
+import { requireAuthNext } from "@/lib/auth-api"
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { searchParams } = new URL(request.url)
     const now = new Date()
     const month = parseInt(searchParams.get("month") || String(now.getMonth() + 1))
     const year  = parseInt(searchParams.get("year")  || String(now.getFullYear()))
-    const businessId = "default-business"
+    const businessId = auth.businessId
 
     // Current month range
     const monthStart = new Date(year, month - 1, 1)

@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { requireAuthNext } from "@/lib/auth-api"
 
 const CategorySchema = z.object({
   name: z.string().min(1),
   type: z.enum(["INCOME", "EXPENSE", "BOTH"]),
-  businessId: z.string().default("default-business"),
 })
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
-    const businessId = new URL(request.url).searchParams.get("businessId") || "default-business"
     const categories = await prisma.category.findMany({
-      where: { businessId },
+      where: { businessId: auth.businessId },
       orderBy: { name: "asc" },
     })
     return NextResponse.json({ categories })
@@ -23,10 +25,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const body = await request.json()
     const data = CategorySchema.parse(body)
-    const category = await prisma.category.create({ data })
+    const category = await prisma.category.create({ data: { ...data, businessId: auth.businessId } })
     return NextResponse.json({ category }, { status: 201 })
   } catch (error) {
     console.error("POST /api/categories error:", error)
@@ -38,11 +43,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const body = await request.json()
     const { id, ...data } = body
     const category = await prisma.category.update({
-      where: { id },
+      where: { id, businessId: auth.businessId },
       data: { name: data.name, type: data.type },
     })
     return NextResponse.json({ category })
@@ -53,10 +61,13 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const id = new URL(request.url).searchParams.get("id")
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 })
-    await prisma.category.delete({ where: { id } })
+    await prisma.category.delete({ where: { id, businessId: auth.businessId } })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("DELETE /api/categories error:", error)

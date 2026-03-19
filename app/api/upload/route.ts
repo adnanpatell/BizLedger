@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { extname } from "path"
 import { randomUUID } from "crypto"
+import { requireAuthNext } from "@/lib/auth-api"
 
 const MAX_SIZE = parseInt(process.env.MAX_FILE_SIZE_MB || "10") * 1024 * 1024
 
@@ -652,6 +653,9 @@ function extractInvoiceData(text: string): Record<string, unknown> {
 // ── POST handler ───────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File | null

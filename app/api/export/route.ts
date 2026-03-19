@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { requireAuthNext } from "@/lib/auth-api"
 
 function escapeCSV(val: any): string {
   if (val === null || val === undefined) return ""
@@ -11,12 +12,15 @@ function escapeCSV(val: any): string {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuthNext(request)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const { searchParams } = new URL(request.url)
     const format = searchParams.get("format") || "csv"
     const month = searchParams.get("month") ? parseInt(searchParams.get("month")!) : null
     const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : null
-    const businessId = "default-business"
+    const businessId = auth.businessId
 
     const where: any = { businessId }
     if (month && year) {
